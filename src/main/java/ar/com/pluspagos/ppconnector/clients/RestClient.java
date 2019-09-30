@@ -3,7 +3,9 @@ package ar.com.pluspagos.ppconnector.clients;
 import ar.com.pluspagos.ppconnector.Ambiente;
 import ar.com.pluspagos.ppconnector.models.AuthenticationModel;
 import ar.com.pluspagos.ppconnector.models.Response;
+import ar.com.pluspagos.ppconnector.services.Cajas;
 import ar.com.pluspagos.ppconnector.services.HealthChecks;
+import ar.com.pluspagos.ppconnector.services.Orders;
 import ar.com.pluspagos.ppconnector.services.Payments;
 import ar.com.pluspagos.ppconnector.services.Querys;
 import ar.com.pluspagos.ppconnector.services.Tokens;
@@ -30,6 +32,8 @@ public abstract class RestClient {
     private static Tokens tokens;
     private static Payments payments;
     private static Querys querys;
+    private static Cajas cajas;
+    private static Orders orders;
 
     public static void init(Ambiente ambiente, String guid, String frase) {
         authenticationModel = AuthenticationModel.with(guid, frase);
@@ -78,6 +82,16 @@ public abstract class RestClient {
     public static Querys getQuerys() {
         if (querys == null) querys = get().create(Querys.class);
         return querys;
+    }
+
+    public static Cajas getCajas(){
+        if(cajas == null) cajas = get().create(Cajas.class);
+        return cajas;
+    }
+
+    public static Orders getOrders(){
+        if(orders == null) orders = get().create(Orders.class);
+        return orders;
     }
 
     private static class TokenAuthenticator implements Authenticator {

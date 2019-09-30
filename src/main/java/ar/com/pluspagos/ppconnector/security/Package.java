@@ -1,6 +1,8 @@
 package ar.com.pluspagos.ppconnector.security;
 
+import ar.com.pluspagos.ppconnector.models.CajaModel;
 import ar.com.pluspagos.ppconnector.models.DatosTarjeta;
+import ar.com.pluspagos.ppconnector.models.OrderModel;
 import ar.com.pluspagos.ppconnector.models.PaymentModel;
 import ar.com.pluspagos.ppconnector.models.TokenModel;
 
@@ -140,6 +142,14 @@ public class Package {
             }else if(model.getClass().equals(PaymentModel.class)) {
             	System.out.println("Orden PaymentModel.class ");
             	input= getStringOrdenadoPaymentModel(map);
+            }else if(model.getClass().equals(CajaModel.class)){
+                System.out.println("Caja CajaModel.class");
+                List<String> campos = Arrays.asList("nombre", "codigo", "sucursalComercioId", "fixedAmount");
+                input = getStringOrdenado(map, campos);
+            }else if(model.getClass().equals(OrderModel.class)){
+                System.out.printf("Order OrderModel.class");
+                List<String> campos = Arrays.asList("idTransaccionInterno", "urlNotificacion", "montoTotal", "productos");
+                input = getStringOrdenado(map, campos);
             }
             
             input = input.substring(0, input.length() - 1);
@@ -163,6 +173,9 @@ public class Package {
     	String p;
     	for (String campo : camposOrdenados) {
     		p = map.get(campo);
+    		if(p != null && (p.equals("true*") || p.equals("false*"))){
+    		    p = ucFirst(p);
+            }
         	s += p == null ? "": p ;
 		}
     	return s;

@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'ar.com.pluspagos'
-version '0.1.0'
+version '0.2.0'
 sourceCompatibility = 1.8
 
 ext{
@@ -16,7 +16,7 @@ ext{
 
     publishedGroupId = 'ar.com.pluspagos'
     artifact = 'ppconnector-java'
-    libraryVersion = '0.1.0'
+    libraryVersion = '0.2.0'
 
     libraryDescription = 'Librería para consumir los servicios del API Pública de PlusPagos, para java y android'
     siteUrl = 'https://github.com/asjservicios/ppconnector-java'

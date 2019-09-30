@@ -2,6 +2,8 @@ package ar.com.pluspagos.ppconnector;
 
 import ar.com.pluspagos.ppconnector.clients.RestClient;
 import ar.com.pluspagos.ppconnector.models.Body;
+import ar.com.pluspagos.ppconnector.models.CajaModel;
+import ar.com.pluspagos.ppconnector.models.OrderModel;
 import ar.com.pluspagos.ppconnector.models.PaymentModel;
 import ar.com.pluspagos.ppconnector.models.Response;
 import ar.com.pluspagos.ppconnector.models.TokenModel;
@@ -112,4 +114,74 @@ public class PPConnector {
                 return Response.fromError(response.errorBody());
         }
     }
+
+    public static Response caja(CajaModel cajaModel, String secretKey) {
+        try {
+            return processResponse(
+                    RestClient.getCajas().caja(
+                            "Bearer " + RestClient.getAccessToken(),
+                            Body.with(Package.getPackage(cajaModel, secretKey))
+                    ).execute()
+            );
+        } catch (IOException e) {
+            return Response.fromException(e);
+        }
+    }
+
+    public static Response order(OrderModel order, String secretKey, String codigo, String ttlPreference) {
+        try {
+            return processResponse(
+                    RestClient.getOrders().createOrder(
+                            "Bearer " + RestClient.getAccessToken(),
+                            ttlPreference,
+                            Body.with(Package.getPackage(order, secretKey)),
+                            codigo
+                    ).execute()
+            );
+        } catch (IOException e) {
+            return Response.fromException(e);
+        }
+    }
+
+
+    public static Response getOrder(String codigo) {
+        try {
+            return processResponse(
+                    RestClient.getOrders().getOrder(
+                            "Bearer " + RestClient.getAccessToken(),
+                            codigo
+                    ).execute()
+            );
+        } catch (IOException e) {
+            return Response.fromException(e);
+        }
+    }
+
+    public static Response getOrderByCajaId(int cajaId) {
+        try {
+            return processResponse(
+                    RestClient.getOrders().getOrderByCajaId(
+                            "Bearer " + RestClient.getAccessToken(),
+                            cajaId
+                    ).execute()
+            );
+        } catch (IOException e) {
+            return Response.fromException(e);
+        }
+    }
+
+
+    public static Response deleteOrder(String codigo) {
+        try {
+            return processResponse(
+                    RestClient.getOrders().deleteOrder(
+                            "Bearer " + RestClient.getAccessToken(),
+                            codigo
+                    ).execute()
+            );
+        } catch (IOException e) {
+            return Response.fromException(e);
+        }
+    }
+
 }
