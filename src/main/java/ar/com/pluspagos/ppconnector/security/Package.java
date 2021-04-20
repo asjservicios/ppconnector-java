@@ -7,17 +7,14 @@ import ar.com.pluspagos.ppconnector.models.PaymentModel;
 import ar.com.pluspagos.ppconnector.models.TokenModel;
 
 import com.google.gson.Gson;
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.PropertyUtils;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 
-import java.beans.PropertyDescriptor;
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.Security;
@@ -30,22 +27,27 @@ import java.util.Map;
 public class Package {
 
     public static String getPackage(Object body, String phrase) {
-        return getPackage(body, phrase, null, false);
+        String result =  getPackage(body, phrase, null, false);
+        System.out.println("GETPACKAGE: " + result);
+        return result;
     }
 
     public static String getPackage(Object body, String phrase, String token, boolean optEncript) {
         try {
-            BeanUtils.setProperty(body, "hash", hashString(body));
+            String hash = hashString(body);
+//            System.out.println(" **hashString(body): " +hash);
+            setProperty(body,"hash",hash);
 
+//            System.out.println(" **optEncript: " +optEncript);
             if (optEncript) {
                 encryptPaymentData(body, token);
             }
             Gson gson = new Gson();
             String bodyString = gson.toJson(body);
+//            System.out.println("*GETPACKAGE Sin encriptar: " + bodyString);
+//            System.out.println("*phrase: " + phrase);
             return encryptAES256(bodyString, phrase);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
+        } catch (IllegalStateException e) {
             e.printStackTrace();
         }
         return null;
@@ -67,18 +69,19 @@ public class Package {
         String encryptKey = token.substring(12, 20);
 
         try {
-            for (PropertyDescriptor property : PropertyUtils.getPropertyDescriptors(body.getClass())) {
-                Object propertyValue = PropertyUtils.getProperty(body, property.getName());
+            for(Field property:body.getClass().getDeclaredFields()){
+                Object propertyValue = getProperty(body, property.getName());
                 if (propertyValue != null) {
-                    if (property.getPropertyType().equals(DatosTarjeta.class)) {
-                        for (PropertyDescriptor sonProperty : PropertyUtils.getPropertyDescriptors(propertyValue.getClass())) {
+                    if (property.getType().equals(DatosTarjeta.class)) {
+                        for (Field sonProperty : propertyValue.getClass().getDeclaredFields()) {
                             if (!sonProperty.getName().equals("email")) {
-                                if (PropertyUtils.isWriteable(propertyValue, sonProperty.getName())) {
-                                    Object value = PropertyUtils.getProperty(propertyValue, sonProperty.getName());
+                                //TODO como verr si se puede escribir
+//                                if (PropertyUtils.isWriteable(propertyValue, sonProperty.getName())) {
+                                    Object value = getProperty(propertyValue, sonProperty.getName());
                                     if (value != null) {
-                                        PropertyUtils.setProperty(propertyValue, sonProperty.getName(), encryptString(value.toString(), encryptKey));
+                                        setProperty(propertyValue, sonProperty.getName(), encryptString(value.toString(), encryptKey));
                                     }
-                                }
+//                                }
                             }
                         }
                     }
@@ -95,33 +98,33 @@ public class Package {
         try {
             String input = "";
             Map<String,String> map = new HashMap<String, String>();
-            
-            for (PropertyDescriptor propertyInfo : PropertyUtils.getPropertyDescriptors(model.getClass())) {
+
+            for (Field propertyInfo:model.getClass().getDeclaredFields()) {
                 if (propertyInfo.getName().equals("class")) continue;
 
 //                System.out.println("***model.getClass(): " + model.getClass());
-                Object propertyValue = PropertyUtils.getProperty(model, propertyInfo.getName());
+                Object propertyValue = getProperty(model, propertyInfo.getName());
                 String value= "";
                 if (propertyValue != null) {
 //                    System.out.println("**Properti Name: " + propertyInfo.getName());
-                    if (!propertyInfo.getPropertyType().isArray() && !propertyInfo.getPropertyType().equals(DatosTarjeta.class)) {
+                    if (!propertyInfo.getType().isArray() && !propertyInfo.getType().equals(DatosTarjeta.class)) {
                         input += String.format("%s*", propertyValue.toString());
                         value = String.format("%s*", propertyValue.toString());
-                    } else if (propertyInfo.getPropertyType().equals(DatosTarjeta.class)) {
+                    } else if (propertyInfo.getType().equals(DatosTarjeta.class)) {
                         Map<String,String> mapSon = new HashMap<String, String>();
                         String valueSon = "";
-                        for (PropertyDescriptor sonProperty : PropertyUtils.getPropertyDescriptors(propertyValue.getClass())) {
+                        for (Field sonProperty : propertyValue.getClass().getDeclaredFields()) {
 //                        	System.out.println("**Properti Name Son: " + sonProperty.getName());
-                            input += String.format("%s*", PropertyUtils.getProperty(propertyValue, sonProperty.getName()).toString());
-                            valueSon =String.format("%s*", PropertyUtils.getProperty(propertyValue, sonProperty.getName()).toString());
+                            input += String.format("%s*", getProperty(propertyValue, sonProperty.getName()).toString());
+                            valueSon =String.format("%s*", getProperty(propertyValue, sonProperty.getName()).toString());
                             mapSon.put(sonProperty.getName(), valueSon);
                         }
                         List<String> campos = Arrays.asList("numeroTarjeta","titularTarjeta","codigoTarjeta"
                     			,"anoVencimiento","mesVencimiento","tipoDocumento","documentoTitular"
                     			,"fechaNacimientoTitular","numeroPuertaResumen","email");
                         value = getStringOrdenado(mapSon,campos);
-                        
-                    } else if (propertyInfo.getPropertyType().isArray()) {
+
+                    } else if (propertyInfo.getType().isArray()) {
                         for (int i = 0; i < Array.getLength(propertyValue); i++) {
                             Object o = Array.get(propertyValue, i);
                             input += String.format("%s*", o.toString());
@@ -248,6 +251,40 @@ public class Package {
             e.printStackTrace();
         }
 
+        return null;
+    }
+
+    public static boolean setProperty(Object bean, String fieldName, Object fieldValue) {
+        Class<?> clazz = bean.getClass();
+        while (clazz != null) {
+            try {
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(bean, fieldValue);
+                return true;
+            } catch (NoSuchFieldException e) {
+                clazz = clazz.getSuperclass();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <V> V getProperty(Object bean, String fieldName) {
+        Class<?> clazz = bean.getClass();
+        while (clazz != null) {
+            try {
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                return (V) field.get(bean);
+            } catch (NoSuchFieldException e) {
+                clazz = clazz.getSuperclass();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
         return null;
     }
 

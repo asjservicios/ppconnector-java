@@ -1,5 +1,10 @@
 package ar.com.pluspagos.ppconnector;
 
+import ar.com.pluspagos.ppconnector.models.DatosTarjeta;
+import ar.com.pluspagos.ppconnector.models.PaymentModel;
+import ar.com.pluspagos.ppconnector.models.Response;
+import ar.com.pluspagos.ppconnector.models.TokenModel;
+
 import java.io.IOException;
 import java.util.UUID;
 
@@ -18,7 +23,12 @@ public class Test {
         PPConnector.init(Ambiente.TEST, comercio, frase);
 
 
-        log("HealthCheck", PPConnector.healthCheck());
+        PPConnector.healthCheck(new PPCallback() {
+            @Override
+            public void onFinished(Response response) {
+                log("HealthCheck", response);
+            }
+        });
 
 
         /*
@@ -26,8 +36,8 @@ public class Test {
         String publicIp = client.newCall(new Request.Builder().url("http://checkip.amazonaws.com")
                 .get().build()).execute().body().string().trim();
                 */
-
-        /******* getPaymentToken ******/
+        //
+        ///******* getPaymentToken ******/
         String publicIp = "207.248.125.4";
         String urlDominio = "www.google.com";
 
@@ -39,41 +49,60 @@ public class Test {
         tokenModel.setProductos(new String[] {"Producto 1", "Producto 2"});
         tokenModel.setTotalOperacion("200");
         tokenModel.setTransaccionComercioId(UUID.randomUUID().toString());
+//        tokenModel.setTransaccionComercioId("331e1085-97ba-4603-8381-1c6b2fccc9dd");
 
-        Response resPT =  PPConnector.getPaymentToken(tokenModel, secretKey);
-        log("GetPaymentToken", resPT);
-        String paymentToken = resPT.getData();
+
+//        Response resPT =  PPConnector.getPaymentToken(tokenModel, secretKey);
+//        log("GetPaymentToken", resPT);
+//        String paymentToken = resPT.getData();
+
+        PPConnector.getPaymentToken(tokenModel, secretKey, new PPCallback() {
+            @Override
+            public void onFinished(Response resPT) {
+
+                log("GetPaymentToken", resPT);
+                String paymentToken = resPT.getData();
+
+            }
+        });
+
+
+        //todos los valores tomados de los ejemplos en la documentación
+        String codigoCajaNueva = "ABC460";
+        int sucursalComercio = 15715;
 
 
         /*Alta Caja*/
-        String codigoCajaNueva = "ABC123";
-        int sucursalComercio = 15715;
-        CajaModel caja = new CajaModel();
-        caja.setNombre("Caja 2");
-        caja.setSucursalComercioId(15715);
-        caja.setCodigo("ABC123");
-        caja.setFixedAmount(false);
-        Response responseAltaCaja = PPConnector.caja(caja, secretKey);
-
-        log("Response Alta Caja", responseAltaCaja);
+        //CajaModel caja = new CajaModel();
+        //caja.setNombre("Caja 2");
+        //caja.setSucursalComercioId(sucursalComercio);
+        //caja.setCodigo(codigoCajaNueva);
+        //caja.setFixedAmount(false);
+        //Response responseAltaCaja = PPConnector.caja(caja, secretKey);
+        //log("Response Alta Caja", responseAltaCaja);
         //
         //
         //String idOrdenPagoNueva = "ORDEN004";
         //
         ///*Generar orden de pago*/
-        OrderModel order = new OrderModel();
-        order.setMontoTotal("1284");
-        order.setFixedAmount(true);
-        order.setIdTransaccionInterno("ORDEN001");
-        order.setProductos("Poducto 1, Producto 2");
-        Response responseCrearOrden = PPConnector.order(order, secretKey, codigoCajaNueva, null);
-        log("Generar orden de pago", responseCrearOrden);
+        //OrderModel order = new OrderModel();
+        //order.setMontoTotal("1284");
+        //order.setFixedAmount(true);
+        //order.setIdTransaccionInterno(idOrdenPagoNueva);
+        //order.setProductos("Poducto 1, Producto 2");
+        //Response responseCrearOrden = PPConnector.order(order, secretKey, codigoCajaNueva, null);
+        //log("Generar orden de pago", responseCrearOrden);
 
 
 
         /*Consultas */
-        Response responseOrden = PPConnector.getOrder("ABC460");
-        log("Consultar por código", responseOrden);
+        PPConnector.getOrder("ABC460", new PPCallback() {
+            @Override
+            public void onFinished(Response response) {
+                log("Consultar por código", response);
+            }
+        });
+
 
 
         //Response responseOrdenByIdCaja = PPConnector.getOrderByCajaId(58);
